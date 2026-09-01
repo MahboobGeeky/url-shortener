@@ -44,7 +44,8 @@ router.get("/login", async (req, res) => {
   const { email, password } = req.body;
 
   const existingUser = await db
-    .select(usersTable)
+    .select()
+    .from(usersTable)
     .where(eq(email, usersTable.email));
 
   if (!existingUser) {
