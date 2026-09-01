@@ -1,4 +1,6 @@
-// stablish connection to db
+// stablish connection to db 
+// this code stablish connection of DB with drizzle-orm
+
 import 'dotenv/config';
 import {drizzle} from 'drizzle-orm/node-postgres';
 
