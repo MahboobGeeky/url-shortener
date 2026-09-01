@@ -1,0 +1,22 @@
+services:
+  db: 
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: admin
+      POSTGRES_USER: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - 5432:5432
+    volumes:
+      - db_data:/var/lib/postgresql
+      
+
+volumes:
+  db_data:
+
+
+
+# this is the latest PostgreSQL 18+ dokcer image
+# for older postgreSQL, we used to add volumes: like this
+# volume: - db_data:/var/lib/postgresql/data  (extra <data> was there)
