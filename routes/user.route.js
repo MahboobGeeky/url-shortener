@@ -10,12 +10,13 @@ const router = express.Router();
 // routes
 
 // SIGNUP ROUTE
-router.post('/signup', async (req, res) => {
+router.post("/signup", async (req, res) => {
   const { firstname, lastname, email, password } = req.body;
 
   const existingUser = await db
-    .select(usersTable)
-    .where(eq(email, usersTable.email));
+    .select()
+    .from(usersTable)
+    .where(usersTable.email, email);
 
   if (existingUser) {
     return res
@@ -39,7 +40,7 @@ router.post('/signup', async (req, res) => {
 });
 
 // LOGIN ROUTE
-router.get('/login', async (req, res) => {
+router.get("/login", async (req, res) => {
   const { email, password } = req.body;
 
   const existingUser = await db
