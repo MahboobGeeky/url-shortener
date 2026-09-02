@@ -4,7 +4,9 @@ import { usersTable } from "../models/user.model.js";
 import { eq } from "drizzle-orm";
 import { createHmac, randomBytes } from "node:crypto";
 import jwt from "jsonwebtoken";
-import {authenticatedUser} from '../middlewares/auth.middleware.js'
+import { authenticatedUser } from "../middlewares/auth.middleware.js";
+import { signupPostRequestBodySchema } from "../validation/request.validation.js";
+import z from "zod";
 
 const router = express.Router();
 
@@ -18,7 +20,17 @@ router.get("/", authenticatedUser, async (req, res) => {
 
 // SIGNUP ROUTE
 router.post("/signup", async (req, res) => {
-  const { firstname, lastname, email, password } = req.body;
+  const validationResult = await signupPostRequestBodySchema.safeParseAsync(
+    req.body,
+  );
+
+  if (!validationResult.success) {
+    return res.status(400).json({
+      error: z.flattenError(validationResult.error),
+    });
+  }
+
+  const { firstname, lastname, email, password } = validationResult.data;
 
   const [existingUser] = await db
     .select()
