@@ -4,8 +4,8 @@ import {varchar, text, pgTable, integer, uuid, timestamp} from 'drizzle-orm/pg-c
 export const usersTable = pgTable("users", {
     id: uuid().primaryKey().defaultRandom(),
 
-    name: varchar('first_name',{length: 55}).notNull(),
-    lastname: varchar('last_name',{length: 55}).notNull().unique(),
+    firstname: varchar('first_name',{length: 55}).notNull(),
+    lastname: varchar('last_name',{length: 55}).notNull(),
     
     email: varchar({length: 255}).notNull(),
     password: text().notNull(),
