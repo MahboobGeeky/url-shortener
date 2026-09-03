@@ -1,10 +1,10 @@
-import * as z from "zod"; 
+import * as z from "zod";
 
 // shcema for validation
 export const signupPostRequestBodySchema = z.object({
-    firstname: z.string(),
-    lastname: z.string().optional(),
-    email: z.email(),
-    password: z.string().min(3),
-
+  firstname: z.string(),
+  lastname: z.string().optional(),
+  email: z.email(),
+  password: z.string().min(3),
 });
+

@@ -2,12 +2,12 @@ import express from "express";
 import db from "../db/index.js";
 import { usersTable } from "../models/user.model.js";
 import { eq } from "drizzle-orm";
-import { createHmac, randomBytes } from "node:crypto";
 import jwt from "jsonwebtoken";
 import { authenticatedUser } from "../middlewares/auth.middleware.js";
 import { signupPostRequestBodySchema } from "../validation/request.validation.js";
 import z from "zod";
-
+import { hashedPasswordWithSalt } from "../utils/hash.js";
+import {getUserByEmail} from '../services/user.service.js'
 const router = express.Router();
 
 // routes
@@ -32,10 +32,7 @@ router.post("/signup", async (req, res) => {
 
   const { firstname, lastname, email, password } = validationResult.data;
 
-  const [existingUser] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.email, email));
+  const existingUser = await getUserByEmail(email);
 
   if (existingUser) {
     return res
@@ -44,10 +41,7 @@ router.post("/signup", async (req, res) => {
   }
 
   // generated Hashed Password
-  const salt = randomBytes(255).toString("hex");
-  const hashedPassword = createHmac("sha256", salt)
-    .update(password)
-    .digest("hex");
+  const {salt, password:hashedPassword} = hashedPasswordWithSalt(password);
 
   // user does not exist, add user into DB
   const [user] = await db
@@ -61,7 +55,10 @@ router.post("/signup", async (req, res) => {
     })
     .returning();
 
-  return res.status(201).json({ status: "success", user });
+    const userId = user.id;
+
+  return res.status(201).json({ status: "success", userId });
+
 });
 
 // LOGIN ROUTE
