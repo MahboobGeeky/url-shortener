@@ -2,12 +2,15 @@ import express from "express";
 import db from "../db/index.js";
 import { usersTable } from "../models/user.model.js";
 import { eq } from "drizzle-orm";
-import jwt from "jsonwebtoken";
 import { authenticatedUser } from "../middlewares/auth.middleware.js";
-import { signupPostRequestBodySchema } from "../validation/request.validation.js";
+import {
+  signupPostRequestBodySchema,
+  loginPostRequestBodySchema,
+} from "../validation/request.validation.js";
 import z from "zod";
-import { hashedPasswordWithSalt } from "../utils/hash.js";
-import {getUserByEmail} from '../services/user.service.js'
+import { hashPasswordWithSalt } from "../utils/hash.js";
+import {createUserToken} from '../utils/token.js'
+import { getUserByEmail } from "../services/user.service.js";
 const router = express.Router();
 
 // routes
@@ -41,7 +44,7 @@ router.post("/signup", async (req, res) => {
   }
 
   // generated Hashed Password
-  const {salt, password:hashedPassword} = hashedPasswordWithSalt(password);
+  const { salt, password: hashedPassword } = hashPasswordWithSalt(password);
 
   // user does not exist, add user into DB
   const [user] = await db
@@ -55,20 +58,25 @@ router.post("/signup", async (req, res) => {
     })
     .returning();
 
-    const userId = user.id;
+  const userId = user.id;
 
   return res.status(201).json({ status: "success", userId });
-
 });
 
 // LOGIN ROUTE
 router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
 
-  const [existingUser] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(email, usersTable.email));
+  const validationResult = await loginPostRequestBodySchema.safeParseAsync(req.body);
+
+  if (!validationResult.success) {
+    return res.status(400).json({
+      error: z.flattenError(validationResult.error),
+    });
+  }
+
+  const { email, password } = validationResult.data;
+
+  const existingUser = await getUserByEmail(email);
 
   if (!existingUser) {
     return res
@@ -77,24 +85,16 @@ router.post("/login", async (req, res) => {
   }
 
   const salt = existingUser.salt;
-  const hashedPassword = existingUser.password;
+  // const hashedPassword = existingUser.password
 
-  const newHashed = createHmac("sha256", salt).update(password).digest("hex");
+  const {password: hashedPassword} = hashPasswordWithSalt(password, salt);
 
-  if (hashedPassword !== newHashed) {
-    return res.status(401).json({ error: `Password is incorrect` });
+  if (hashedPassword !== existingUser.password) {
+    return res.status(401).json({ error: `Invalid Password` });
   }
 
   // create token for login session:-
-  // create payload
-  const payload = {
-    id: existingUser.id,
-    firstname: existingUser.firstname,
-    lastname: existingUser.lastname,
-    email: existingUser.email,
-  };
-
-  const token = jwt.sign(payload, process.env.JWT_SECRET);
+  const token = await createUserToken({id: existingUser.id});
 
   return res.status(201).json({ status: "success", token });
 });
