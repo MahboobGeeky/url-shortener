@@ -1,19 +1,37 @@
-import express from "express";
-import jwt from "jsonwebtoken";
-import "dotenv/config";
+import { validateUserToken } from "../utils/token.js";
 
-export const authenticatedUser = async (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1];
+/**
+ * @param {import("express").Request} req
+ * @param {import("express").Response} res
+ * @param {import("express").NextFunction} next
+ * @returns
+ */
 
-  if (!token) {
-    return res.status(401).json({ error: "Unauthorized" });
+export const authenticationMiddleware = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) return next();
+
+  if (!authHeader.startsWith("Bearer")) {
+    return res
+      .status(400)
+      .json({ error: "Authorization header must start with Bearer" });
   }
 
-  // payload -> user
-  const payload = jwt.verify(token, process.env.JWT_SECRET);
+  const [_, token] = authHeader.split(" "); // [Bearer, <token>]
+
+  const payload = validateUserToken(token);
 
   req.user = payload;
 
   next();
 };
 
+export function ensureAuthenticated(req, res, next) {
+  if (!req.user || !req.user.id) {
+    return res
+      .status(401)
+      .json({ error: "You must be logged in to access this resource" });
+  }
+  next();
+}
