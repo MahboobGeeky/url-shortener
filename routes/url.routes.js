@@ -28,7 +28,7 @@ router.post("/shorten", ensureAuthenticated, async (req, res) => {
 
   const { url, code } = validationResult.data;
 
-  const shortCode = code ?? nanoid(6);
+  const shortCode = code || nanoid(6);
 
   const [result] = await db
     .insert(urlsTable)
